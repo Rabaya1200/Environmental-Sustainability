@@ -1,47 +1,42 @@
 import streamlit as st
 from google import genai
+from google.genai import types  # <--- Added this to handle options
 from PIL import Image
-import os
 
-# 1. Page Configuration
+# 1. Page Config
 st.set_page_config(page_title="Eco-Scanner AI", page_icon="🌍")
-st.title("🌍 Environmental Sustainability Assistant")
-st.write("Upload a photo of waste or a plant to learn how to help the planet.")
+st.title("🌍 Sustainability Assistant")
 
-# 2. Secure API Connection
-# We get the key from Streamlit's secret storage
+# 2. Key Management
 api_key = st.secrets.get("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("Missing API Key! Please add it to Streamlit Secrets.")
+    st.error("Please add your API key to Streamlit Secrets!")
 else:
-    # Initialize the new 2026 Google GenAI Client
-    client = genai.Client(api_key=api_key)
+    # --- EXPERT REPAIR START ---
+    # We use types.HttpOptions to force 'v1'. 
+    # This fixes the 'v1beta' 404 error in your screenshot.
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(api_version='v1')
+    )
+    # --- EXPERT REPAIR END ---
 
-    uploaded_file = st.file_uploader("Capture or upload an image...", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("Upload waste/plant photo...", type=["jpg", "jpeg", "png"])
 
     if uploaded_file:
         img = Image.open(uploaded_file)
-        st.image(img, caption="Target Image", use_container_width=True)
+        st.image(img, caption="Analyzing...", use_container_width=True)
 
         if st.button("Analyze Eco-Impact"):
-            with st.spinner("Consulting Gemini 3.1 Flash..."):
+            with st.spinner("Scientist is thinking..."):
                 try:
-                    # Multi-modal prompt (Text + Image)
-                    prompt = (
-                        "You are an Environmental Scientist. Analyze this image and provide: "
-                        "1. Identification of the object. "
-                        "2. Sustainability advice (Recycling, composting, or care instructions). "
-                        "3. A small tip to reduce carbon footprint related to this item."
-                    )
-                    
+                    # Model name is exactly gemini-3.1-flash
                     response = client.models.generate_content(
                         model="gemini-3.1-flash",
-                        contents=[prompt, img]
+                        contents=["Explain how to recycle this object and its eco-impact.", img]
                     )
-                    
                     st.success("### AI Sustainability Report")
                     st.write(response.text)
-                
                 except Exception as e:
-                    st.error(f"Analysis failed: {e}")
+                    st.error(f"Technical Error: {e}")
